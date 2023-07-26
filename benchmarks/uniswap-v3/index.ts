@@ -1,8 +1,15 @@
 import { ALICE, forkBlockNumber, forkUrl } from "../constants.js";
-import { approve, createToken, mint } from "../utils.js";
+import {
+  nonfungiblePositionManagerABI,
+  uniswapV3PoolABI,
+} from "../generated.js";
+import { approve, createToken, mint, publicClient } from "../utils.js";
 import { NonfungiblePositionManagerAddress, createPair } from "./utils.js";
+import { mint as pairMint } from "./utils.js";
+import { addLiquidity as pairAddLiquidity } from "./utils.js";
 import { startProxy } from "@viem/anvil";
-import { parseEther } from "viem";
+import { parse } from "path";
+import { parseEther, publicActions } from "viem";
 
 export const addLiquidity = async () => {
   const shutdown = await startProxy({
@@ -14,6 +21,8 @@ export const addLiquidity = async () => {
       forkBlockNumber,
     },
   });
+
+  const block = await publicClient.getBlock();
 
   const tokenA = await createToken();
   const tokenB = await createToken();
@@ -28,9 +37,28 @@ export const addLiquidity = async () => {
 
   await approve(token0, NonfungiblePositionManagerAddress, parseEther("10"));
   await approve(token1, NonfungiblePositionManagerAddress, parseEther("10"));
-  const pair = await createPair(token0, token1, 3000);
+  await createPair(token0, token1, 3000);
 
-  console.log("pair address", pair);
+  const { receipt: mintReceipt, tokenId } = await pairMint(
+    token0,
+    token1,
+    3000,
+    0,
+    60,
+    parseEther("1"),
+    parseEther("1"),
+    ALICE,
+    block.timestamp + 100n,
+  );
+  console.log("mint gas:", mintReceipt.gasUsed);
+
+  const { receipt: addLiquidityReceipt } = await pairAddLiquidity(
+    tokenId,
+    parseEther("1"),
+    parseEther("1"),
+    block.timestamp + 100n,
+  );
+  console.log("add liquidity gas:", addLiquidityReceipt.gasUsed);
 
   await shutdown();
 };

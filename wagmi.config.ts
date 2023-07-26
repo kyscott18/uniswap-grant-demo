@@ -7,7 +7,11 @@ export default defineConfig({
   plugins: [
     foundry({
       project: "uniswap-v3/",
-      include: ["UniswapV3Factory.sol/**", "NonfungiblePositionManager.sol/**"],
+      include: [
+        "UniswapV3Factory.sol/**",
+        "UniswapV3Pool.sol/**",
+        "NonfungiblePositionManager.sol/**",
+      ],
     }),
     foundry({
       project: "contracts/",

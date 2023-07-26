@@ -18,7 +18,7 @@ export const createPair = async (
     abi: nonfungiblePositionManagerABI,
     functionName: "createAndInitializePoolIfNecessary",
     address: NonfungiblePositionManagerAddress,
-    args: [token0, token1, fee, 0x100000000000000000000000000000000n],
+    args: [token0, token1, fee, 2n ** 96n],
     account: ALICE,
     value: 0n,
   });
