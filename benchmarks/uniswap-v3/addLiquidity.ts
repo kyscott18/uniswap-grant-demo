@@ -1,5 +1,5 @@
-import { forkBlockNumber, forkUrl } from "../constants.js";
-import { createToken } from "../utils.js";
+import { ALICE, forkBlockNumber, forkUrl } from "../constants.js";
+import { approve, createToken, mint } from "../utils.js";
 import { NonfungiblePositionManagerAddress, createPair } from "./utils.js";
 import { startProxy } from "@viem/anvil";
 import { parseEther } from "viem";
@@ -14,20 +14,23 @@ export const addLiquidity = async () => {
       forkBlockNumber,
     },
   });
-  const [tokenA, tokenB] = await Promise.all([createToken(), createToken()]);
+
+  const tokenA = await createToken();
+  const tokenB = await createToken();
 
   const [token0, token1] =
     tokenA.toLowerCase() < tokenB.toLowerCase()
       ? [tokenA, tokenB]
       : [tokenB, tokenA];
 
-  // const [, , pair] = await Promise.all([
-  //   approve(token0, NonfungiblePositionManagerAddress, parseEther("10")),
-  //   approve(token1, NonfungiblePositionManagerAddress, parseEther("10")),
-  //   createPair(token0, token1, 3000),
-  // ]);
+  await mint(token0, ALICE, parseEther("10"));
+  await mint(token1, ALICE, parseEther("10"));
 
-  // console.log("pair address", pair);
+  await approve(token0, NonfungiblePositionManagerAddress, parseEther("10"));
+  await approve(token1, NonfungiblePositionManagerAddress, parseEther("10"));
+  const pair = await createPair(token0, token1, 3000);
+
+  console.log("pair address", pair);
 
   await shutdown();
 };
