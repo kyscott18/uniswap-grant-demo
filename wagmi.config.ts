@@ -11,7 +11,7 @@ export default defineConfig({
     }),
     foundry({
       project: "contracts/",
-      include: ["MockERC20.sol/**/"],
+      include: ["MockERC20.sol/**"],
     }),
   ],
 });

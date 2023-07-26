@@ -1,5 +1,6 @@
-import TestERC20 from "../uniswap-v3/out/TestERC20.sol/TestERC20.json";
+import MockERC20 from "../contracts/out/MockERC20.sol/MockERC20.json";
 import { ALICE } from "./constants.js";
+import { mockErc20ABI } from "./generated.js";
 import invariant from "tiny-invariant";
 import {
   type Address,
@@ -49,22 +50,21 @@ export const walletClient = createWalletClient({
   account: ALICE,
 });
 
-// export const createToken = async (): Promise<Address> => {
-//   console.log("inini");
-//   const deployHash = await walletClient.deployContract({
-//     account: ALICE,
-//     abi: testErc20ABI,
-//     bytecode: TestERC20.bytecode.object as Hex,
-//     args: [parseEther("10")],
-//   });
-//   console.log(1);
+export const createToken = async (): Promise<Address> => {
+  console.log("before");
+  const deployHash = await walletClient.deployContract({
+    account: ALICE,
+    abi: mockErc20ABI,
+    bytecode: MockERC20.bytecode.object as Hex,
+    args: ["Test", "TEST", 18],
+  });
 
-//   const { contractAddress } = await publicClient.waitForTransactionReceipt({
-//     hash: deployHash,
-//   });
-//   invariant(contractAddress);
-//   return getAddress(contractAddress);
-// };
+  const { contractAddress } = await publicClient.waitForTransactionReceipt({
+    hash: deployHash,
+  });
+  invariant(contractAddress);
+  return getAddress(contractAddress);
+};
 
 // export const approve = async (
 //   token: Address,
