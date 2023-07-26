@@ -8,5 +8,5 @@
 *.tsbuildinfo
 
 # @wagmi/cli
-test/generated.ts
+benchmarks/generated.ts
 
