@@ -1,15 +1,10 @@
 import { ALICE, forkBlockNumber, forkUrl } from "../constants.js";
-import {
-  nonfungiblePositionManagerABI,
-  uniswapV3PoolABI,
-} from "../generated.js";
 import { approve, createToken, mint, publicClient } from "../utils.js";
 import { NonfungiblePositionManagerAddress, createPair } from "./utils.js";
 import { mint as pairMint } from "./utils.js";
 import { addLiquidity as pairAddLiquidity } from "./utils.js";
 import { startProxy } from "@viem/anvil";
-import { parse } from "path";
-import { parseEther, publicActions } from "viem";
+import { parseEther } from "viem";
 
 export const addLiquidity = async () => {
   const shutdown = await startProxy({

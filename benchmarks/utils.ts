@@ -8,9 +8,7 @@ import {
   createPublicClient,
   createTestClient,
   createWalletClient,
-  getAddress,
   http,
-  parseEther,
 } from "viem";
 import { mainnet } from "viem/chains";
 import type { Chain } from "viem/chains";
