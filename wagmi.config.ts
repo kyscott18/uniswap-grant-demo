@@ -9,5 +9,9 @@ export default defineConfig({
       project: "uniswap-v3/",
       include: ["UniswapV3Factory.sol/**", "NonfungiblePositionManager.sol/**"],
     }),
+    foundry({
+      project: "contracts/",
+      include: ["MockERC20.sol/**/"],
+    }),
   ],
 });
