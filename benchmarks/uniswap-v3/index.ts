@@ -39,6 +39,18 @@ export const addLiquidity = async () => {
   await approve(token1, NonfungiblePositionManagerAddress, parseEther("10"));
   await createPair(token0, token1, 3000);
 
+  await pairMint(
+    token0,
+    token1,
+    3000,
+    0,
+    60,
+    parseEther("1"),
+    parseEther("1"),
+    ALICE,
+    block.timestamp + 100n,
+  );
+
   const {
     receipt: mintReceipt,
     tokenId,
@@ -71,15 +83,15 @@ export const addLiquidity = async () => {
     block.timestamp + 100n,
     ALICE,
   );
-  console.log("remove liquidity gas:", removeLiquidityReceipt.gasUsed);
+  console.log("remove liquidity partial gas:", removeLiquidityReceipt.gasUsed);
 
-  const { receipt: burnReceipt } = await pairBurn(
+  const { receipt: burnReceipt } = await pairRemoveLiquidity(
     tokenId,
     mintLiquidity,
     block.timestamp + 100n,
     ALICE,
   );
-  console.log("burn gas:", burnReceipt.gasUsed);
+  console.log("remove liquidity full gas:", burnReceipt.gasUsed);
 
   await shutdown();
 };

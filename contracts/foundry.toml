@@ -3,4 +3,4 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
-allow_paths = ["../lib"]
+allow_paths = ["../node_modules", "../lib"]
