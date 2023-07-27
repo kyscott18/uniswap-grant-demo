@@ -4,9 +4,7 @@ import { publicClient, walletClient } from "../utils.js";
 import {
   type Address,
   type TransactionReceipt,
-  encodeAbiParameters,
   encodeFunctionData,
-  getAbiItem,
   getAddress,
   parseEther,
 } from "viem";
