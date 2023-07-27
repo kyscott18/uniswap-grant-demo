@@ -1,7 +1,15 @@
 import { ALICE } from "../constants.js";
 import { nonfungiblePositionManagerABI } from "../generated.js";
 import { publicClient, walletClient } from "../utils.js";
-import { type Address, type TransactionReceipt, getAddress } from "viem";
+import {
+  type Address,
+  type TransactionReceipt,
+  encodeAbiParameters,
+  encodeFunctionData,
+  getAbiItem,
+  getAddress,
+  parseEther,
+} from "viem";
 
 export const UniswapV3FactoryAddress =
   "0x1F98431c8aD98523631AE4a59f267346ea31F984";
@@ -98,4 +106,85 @@ export const addLiquidity = async (
   const hash = await walletClient.writeContract(request);
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   return { receipt, liquidity: result[0] };
+};
+
+export const removeLiqudity = async (
+  tokenId: bigint,
+  liquidity: bigint,
+  deadline: bigint,
+  to: Address,
+): Promise<{
+  receipt: TransactionReceipt;
+}> => {
+  const decreaseData = encodeFunctionData({
+    abi: nonfungiblePositionManagerABI,
+    functionName: "decreaseLiquidity",
+    args: [{ tokenId, liquidity, deadline, amount0Min: 0n, amount1Min: 0n }],
+  });
+  const collectData = encodeFunctionData({
+    abi: nonfungiblePositionManagerABI,
+    functionName: "collect",
+    args: [
+      {
+        recipient: to,
+        tokenId,
+        amount0Max: parseEther("10"),
+        amount1Max: parseEther("10"),
+      },
+    ],
+  });
+
+  const { request } = await publicClient.simulateContract({
+    abi: nonfungiblePositionManagerABI,
+    functionName: "multicall",
+    address: NonfungiblePositionManagerAddress,
+    args: [[decreaseData, collectData]],
+    account: ALICE,
+    value: 0n,
+  });
+  const hash = await walletClient.writeContract(request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { receipt };
+};
+
+export const burn = async (
+  tokenId: bigint,
+  liquidity: bigint,
+  deadline: bigint,
+  to: Address,
+) => {
+  const decreaseData = encodeFunctionData({
+    abi: nonfungiblePositionManagerABI,
+    functionName: "decreaseLiquidity",
+    args: [{ tokenId, liquidity, deadline, amount0Min: 0n, amount1Min: 0n }],
+  });
+  const collectData = encodeFunctionData({
+    abi: nonfungiblePositionManagerABI,
+    functionName: "collect",
+    args: [
+      {
+        recipient: to,
+        tokenId,
+        amount0Max: parseEther("10"),
+        amount1Max: parseEther("10"),
+      },
+    ],
+  });
+  const burnData = encodeFunctionData({
+    abi: nonfungiblePositionManagerABI,
+    functionName: "burn",
+    args: [tokenId],
+  });
+
+  const { request } = await publicClient.simulateContract({
+    abi: nonfungiblePositionManagerABI,
+    functionName: "multicall",
+    address: NonfungiblePositionManagerAddress,
+    args: [[decreaseData, collectData, burnData]],
+    account: ALICE,
+    value: 0n,
+  });
+  const hash = await walletClient.writeContract(request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { receipt };
 };

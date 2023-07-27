@@ -1,8 +1,13 @@
 import { ALICE, forkBlockNumber, forkUrl } from "../constants.js";
 import { approve, createToken, mint, publicClient } from "../utils.js";
-import { NonfungiblePositionManagerAddress, createPair } from "./utils.js";
-import { mint as pairMint } from "./utils.js";
-import { addLiquidity as pairAddLiquidity } from "./utils.js";
+import {
+  NonfungiblePositionManagerAddress,
+  addLiquidity as pairAddLiquidity,
+  burn as pairBurn,
+  createPair,
+  mint as pairMint,
+  removeLiqudity as pairRemoveLiquidity,
+} from "./utils.js";
 import { startProxy } from "@viem/anvil";
 import { parseEther } from "viem";
 
@@ -34,7 +39,11 @@ export const addLiquidity = async () => {
   await approve(token1, NonfungiblePositionManagerAddress, parseEther("10"));
   await createPair(token0, token1, 3000);
 
-  const { receipt: mintReceipt, tokenId } = await pairMint(
+  const {
+    receipt: mintReceipt,
+    tokenId,
+    liquidity: mintLiquidity,
+  } = await pairMint(
     token0,
     token1,
     3000,
@@ -47,13 +56,30 @@ export const addLiquidity = async () => {
   );
   console.log("mint gas:", mintReceipt.gasUsed);
 
-  const { receipt: addLiquidityReceipt } = await pairAddLiquidity(
-    tokenId,
-    parseEther("1"),
-    parseEther("1"),
-    block.timestamp + 100n,
-  );
+  const { receipt: addLiquidityReceipt, liquidity: addLiquidity } =
+    await pairAddLiquidity(
+      tokenId,
+      parseEther("1"),
+      parseEther("1"),
+      block.timestamp + 100n,
+    );
   console.log("add liquidity gas:", addLiquidityReceipt.gasUsed);
+
+  const { receipt: removeLiquidityReceipt } = await pairRemoveLiquidity(
+    tokenId,
+    addLiquidity,
+    block.timestamp + 100n,
+    ALICE,
+  );
+  console.log("remove liquidity gas:", removeLiquidityReceipt.gasUsed);
+
+  const { receipt: burnReceipt } = await pairBurn(
+    tokenId,
+    mintLiquidity,
+    block.timestamp + 100n,
+    ALICE,
+  );
+  console.log("burn gas:", burnReceipt.gasUsed);
 
   await shutdown();
 };
