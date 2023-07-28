@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity =0.7.6;
-pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
-import './interfaces/INonfungiblePositionManager.sol';
+import './interfaces/IPositionManager.sol';
 
 import './libraries/TransferHelper.sol';
 
@@ -51,9 +50,9 @@ contract V3Migrator is IV3Migrator, PeripheryImmutableState, PoolInitializer, Mu
         TransferHelper.safeApprove(params.token1, nonfungiblePositionManager, amount1V2ToMigrate);
 
         // mint v3 position
-        (, , uint256 amount0V3, uint256 amount1V3) =
-            INonfungiblePositionManager(nonfungiblePositionManager).mint(
-                INonfungiblePositionManager.MintParams({
+        (, uint256 amount0V3, uint256 amount1V3) =
+            IPositionManager(nonfungiblePositionManager).increaseLiquidity(
+                IPositionManager.IncreaseLiquidityParams({
                     token0: params.token0,
                     token1: params.token1,
                     fee: params.fee,

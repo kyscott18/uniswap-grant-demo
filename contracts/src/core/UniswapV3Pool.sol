@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.7.6;
+pragma solidity ^0.8.0;
 
 import './interfaces/IUniswapV3Pool.sol';
 
 import './NoDelegateCall.sol';
+import './Positions.sol';
 
 import './libraries/LowGasSafeMath.sol';
 import './libraries/SafeCast.sol';
 import './libraries/Tick.sol';
 import './libraries/TickBitmap.sol';
-import './libraries/Position.sol';
 import './libraries/Oracle.sol';
 
 import './libraries/FullMath.sol';
@@ -27,15 +27,13 @@ import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
 
-contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
+contract UniswapV3Pool is Positions, IUniswapV3Pool, NoDelegateCall {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
     using TickBitmap for mapping(int16 => uint256);
-    using Position for mapping(bytes32 => Position.Info);
-    using Position for Position.Info;
     using Oracle for Oracle.Observation[65535];
 
     /// @inheritdoc IUniswapV3PoolImmutables
@@ -93,8 +91,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     mapping(int24 => Tick.Info) public override ticks;
     /// @inheritdoc IUniswapV3PoolState
     mapping(int16 => uint256) public override tickBitmap;
-    /// @inheritdoc IUniswapV3PoolState
-    mapping(bytes32 => Position.Info) public override positions;
     /// @inheritdoc IUniswapV3PoolState
     Oracle.Observation[65535] public override observations;
 
@@ -166,6 +162,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             uint32 secondsInside
         )
     {
+      unchecked {
         checkTicks(tickLower, tickUpper);
 
         int56 tickCumulativeLower;
@@ -230,6 +227,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 secondsOutsideUpper - secondsOutsideLower
             );
         }
+      }
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
@@ -307,7 +305,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         private
         noDelegateCall
         returns (
-            Position.Info storage position,
+            Positions.ILRTAData storage position,
             int256 amount0,
             int256 amount1
         )
@@ -382,8 +380,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper,
         int128 liquidityDelta,
         int24 tick
-    ) private returns (Position.Info storage position) {
-        position = positions.get(owner, tickLower, tickUpper);
+    ) private returns (Positions.ILRTAData storage position) {
+        position = getPosition(owner, tickLower, tickUpper);
 
         uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
         uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
@@ -439,7 +437,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
-        position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128);
+        _updatePosition(position, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128);
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
@@ -468,7 +466,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     owner: recipient,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    liquidityDelta: int256(amount).toInt128()
+                    liquidityDelta: int256(uint256(amount)).toInt128()
                 })
             );
 
@@ -487,57 +485,47 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PoolActions
-    function collect(
+    /// @dev noDelegateCall is applied indirectly via _modifyPosition
+    function burn(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount0Requested,
-        uint128 amount1Requested
-    ) external override lock returns (uint128 amount0, uint128 amount1) {
-        // we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
-        Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
-
-        amount0 = amount0Requested > position.tokensOwed0 ? position.tokensOwed0 : amount0Requested;
-        amount1 = amount1Requested > position.tokensOwed1 ? position.tokensOwed1 : amount1Requested;
-
-        if (amount0 > 0) {
-            position.tokensOwed0 -= amount0;
-            TransferHelper.safeTransfer(token0, recipient, amount0);
-        }
-        if (amount1 > 0) {
-            position.tokensOwed1 -= amount1;
-            TransferHelper.safeTransfer(token1, recipient, amount1);
-        }
-
-        emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
-    }
-
-    /// @inheritdoc IUniswapV3PoolActions
-    /// @dev noDelegateCall is applied indirectly via _modifyPosition
-    function burn(
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
+        bool collect
     ) external override lock returns (uint256 amount0, uint256 amount1) {
-        (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
+      ILRTAData storage burnPosition = getPosition(address(this), tickLower, tickUpper);
+      uint128 amount = burnPosition.liquidity;
+      unchecked {
+        (Positions.ILRTAData storage position, int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({
-                    owner: msg.sender,
+                    owner: address(this),
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    liquidityDelta: -int256(amount).toInt128()
+                    liquidityDelta: -int256(uint256(amount)).toInt128()
                 })
             );
 
         amount0 = uint256(-amount0Int);
         amount1 = uint256(-amount1Int);
 
-        if (amount0 > 0 || amount1 > 0) {
-            (position.tokensOwed0, position.tokensOwed1) = (
-                position.tokensOwed0 + uint128(amount0),
-                position.tokensOwed1 + uint128(amount1)
-            );
+        if (collect) {
+          amount0 += position.tokensOwed0;
+          amount1 += position.tokensOwed1;
+          if (amount0 > 0) {
+            position.tokensOwed0 = 0;
+            TransferHelper.safeTransfer(token0, recipient, amount0);
+          }
+          if (amount1 > 0) {
+            position.tokensOwed1 = 0;
+            TransferHelper.safeTransfer(token1, recipient, amount1);
+          }
+        } else if (amount0 > 0 || amount1 > 0) {
+          (position.tokensOwed0, position.tokensOwed1) = (
+              position.tokensOwed0 + uint128(amount0),
+              position.tokensOwed1 + uint128(amount1)
+          );
         }
+      }
 
         emit Burn(msg.sender, tickLower, tickUpper, amount, amount0, amount1);
     }
@@ -600,6 +588,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint160 sqrtPriceLimitX96,
         bytes calldata data
     ) external override noDelegateCall returns (int256 amount0, int256 amount1) {
+      unchecked {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory slot0Start = slot0;
@@ -785,6 +774,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);
         slot0.unlocked = true;
+      }
     }
 
     /// @inheritdoc IUniswapV3PoolActions
@@ -794,6 +784,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 amount1,
         bytes calldata data
     ) external override lock noDelegateCall {
+      unchecked {
         uint128 _liquidity = liquidity;
         require(_liquidity > 0, 'L');
 
@@ -831,6 +822,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         }
 
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
+      }
     }
 
     /// @inheritdoc IUniswapV3PoolOwnerActions
