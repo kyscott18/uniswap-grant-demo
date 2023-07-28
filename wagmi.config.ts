@@ -15,7 +15,12 @@ export default defineConfig({
     }),
     foundry({
       project: "contracts/",
-      include: ["MockERC20.sol/**"],
+      namePrefix: "ilrta",
+      include: [        
+        "UniswapV3Factory.sol/**",
+        "UniswapV3Pool.sol/**",
+        "PositionManager.sol/**",
+        "MockERC20.sol/**"],
     }),
   ],
 });

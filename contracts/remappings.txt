@@ -4,3 +4,7 @@
 @openzeppelin/=../node_modules/@openzeppelin/
 base64-sol/=../node_modules/base64-sol/
 solmate/=../lib/solmate/src/
+ilrta/=../lib/ilrta/packages/evm/src/
+forge-std/=../lib/forge-std/src/
+src/=src/
+ds-test/=../lib/forge-std/lib/ds-test/src/

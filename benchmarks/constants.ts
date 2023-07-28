@@ -20,4 +20,4 @@ export const ACCOUNTS = [
 ] as const;
 
 // Named accounts
-export const [ALICE] = ACCOUNTS;
+export const [ALICE, BOB] = ACCOUNTS;

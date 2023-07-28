@@ -1,9 +1,8 @@
-import { ALICE, forkBlockNumber, forkUrl } from "../constants.js";
+import { ALICE, BOB, forkBlockNumber, forkUrl } from "../constants.js";
 import { approve, createToken, mint, publicClient } from "../utils.js";
 import {
   NonfungiblePositionManagerAddress,
   addLiquidity as pairAddLiquidity,
-  burn as pairBurn,
   createPair,
   mint as pairMint,
   removeLiqudity as pairRemoveLiquidity,
@@ -11,7 +10,7 @@ import {
 import { startProxy } from "@viem/anvil";
 import { parseEther } from "viem";
 
-export const addLiquidity = async () => {
+export const main = async () => {
   const shutdown = await startProxy({
     port: 8545, // By default, the proxy will listen on port 8545.
     host: "::", // By default, the proxy will listen on all interfaces.
@@ -47,7 +46,7 @@ export const addLiquidity = async () => {
     60,
     parseEther("1"),
     parseEther("1"),
-    ALICE,
+    BOB,
     block.timestamp + 100n,
   );
 
@@ -96,4 +95,4 @@ export const addLiquidity = async () => {
   await shutdown();
 };
 
-addLiquidity().catch((err) => console.error(err));
+main().catch((err) => console.error(err));

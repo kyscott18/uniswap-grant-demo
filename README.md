@@ -6,14 +6,17 @@ Implementation of custom positions contract for Uniswap V3.
 
 |                          |Uniswap V3 |Uniswap V3 + ilrta|
 |--------------------------|-----------|------------------|
-|Add liquidity (cold)      |    295,220|                  |
-|Add liquidity (hot)       |    144,646|                  |
+|Add liquidity (cold)      |    295,220|           170,144|
+|Add liquidity (hot)       |    144,646|           153,044|
 |Remove liquidity (partial)|    171,229|                  |
 |Remove liquidity (full)   |    158,917|                  |
 
-## Event count
+## Function Calls
 
 |Event            |Count   |
 |-----------------|--------|
-|Add liquidity    | 703,802|
-|Remove liquidity | 522,171|
+|Mint             | 585,729|
+|Add liquidity    | 171,979|
+|Remove liquidity | 544,659|
+
+## Gas Savings

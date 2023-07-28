@@ -1,6 +1,6 @@
 import MockERC20 from "../contracts/out/MockERC20.sol/MockERC20.json";
 import { ALICE } from "./constants.js";
-import { mockErc20ABI } from "./generated.js";
+import { ilrtaMockErc20ABI } from "./generated.js";
 import invariant from "tiny-invariant";
 import {
   type Address,
@@ -52,7 +52,7 @@ export const walletClient = createWalletClient({
 export const createToken = async (): Promise<Address> => {
   const deployHash = await walletClient.deployContract({
     account: ALICE,
-    abi: mockErc20ABI,
+    abi: ilrtaMockErc20ABI,
     bytecode: MockERC20.bytecode.object as Hex,
     args: ["Mock ERC20", "MOCK", 18],
   });
@@ -66,7 +66,7 @@ export const createToken = async (): Promise<Address> => {
 
 export const mint = async (token: Address, to: Address, amount: bigint) => {
   const { request } = await publicClient.simulateContract({
-    abi: mockErc20ABI,
+    abi: ilrtaMockErc20ABI,
     functionName: "mint",
     address: token,
     args: [to, amount],
@@ -82,7 +82,7 @@ export const approve = async (
   amount: bigint,
 ) => {
   const { request } = await publicClient.simulateContract({
-    abi: mockErc20ABI,
+    abi: ilrtaMockErc20ABI,
     functionName: "approve",
     address: token,
     args: [spender, amount],
