@@ -23,7 +23,7 @@ Implementation of custom positions contract for Uniswap V3. This contract uses [
 
 |Gas Price (gwei)|Gas Savings (eth)|
 |----------------|-----------------|
-|25              |          1,831.5|
-|50              |          3,663.0|
-|75              |          5,494.5|
-|100             |          7,326.1|
+|25              |          1,795.4|
+|50              |          3,590.8|
+|75              |          5,386.2|
+|100             |          7,181.6|
