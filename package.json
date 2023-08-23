@@ -4,7 +4,7 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "build": "forge build --root uniswap-v3"
+    "build": "pnpm wagmi generate"
   },
   "keywords": [],
   "author": "",

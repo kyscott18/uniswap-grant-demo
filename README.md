@@ -27,3 +27,21 @@ Implementation of custom positions contract for Uniswap V3. This contract uses [
 |50              |          3,590.8|
 |75              |          5,386.2|
 |100             |          7,181.6|
+
+## Recreating
+
+Function invocation count was found using [dune analyitics](https://dune.com/queries/2780357)
+
+### Scripts
+
+```sh
+pnpm install
+
+pnpm build
+
+# To run standard uniswap v3 benchmarks
+pnpm bun benchmarks/uniswap-v3/index.ts
+
+# To run ilrta + uniswap v3 benchmarks
+pnpm bun benchmarks/ilrta-uniswap-v3/index.ts
+```
