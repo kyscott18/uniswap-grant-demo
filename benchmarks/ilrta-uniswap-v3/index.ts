@@ -1,3 +1,5 @@
+import { startProxy } from "@viem/anvil";
+import { parseEther, zeroAddress } from "viem";
 import { ALICE, BOB, forkBlockNumber, forkUrl } from "../constants.js";
 import { approve, createToken, mint, publicClient } from "../utils.js";
 import {
@@ -5,10 +7,7 @@ import {
   createFactory,
   createPair,
   createPositionManager,
-  removeLiqudity as pairRemoveLiquidity,
 } from "./utils.js";
-import { startProxy } from "@viem/anvil";
-import { parseEther, zeroAddress } from "viem";
 
 export const main = async () => {
   const shutdown = await startProxy({
